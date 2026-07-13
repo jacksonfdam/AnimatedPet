@@ -1,9 +1,7 @@
-# Animated Pet (Android desktop-pet)
+# Animated Pet
 
 A floating, draggable sprite-sheet pet that lives on top of your home screen and
 other apps. **Tap** the pet to open the app; **drag** it to move it around.
-
-This is a standalone experiment — unrelated to any other project in this folder.
 
 ## How it works
 
@@ -38,7 +36,3 @@ This is a standalone experiment — unrelated to any other project in this folde
 - **On-screen size:** `SpriteView.targetHeightDp`.
 - **Grid layout:** the `cols`/`rows` args in `SpriteSheet.load(...)` inside
   `PetOverlayService.addPetToWindow()`.
-
-## Toolchain
-
-Kotlin 2.1.20 · AGP 8.12 · Gradle 9.0 · JDK 21 · min SDK 26 / target 35 / compile 36.
