@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Animated Pet</string>
+    <string name="grant_overlay">Grant overlay permission</string>
+    <string name="choose_pets">Choose your pets</string>
+    <string name="apply_pets">Show selected pets</string>
+    <string name="remove_all">Remove all pets</string>
+    <string name="status_ready">Permission granted — pick pets and tap \"Show selected pets\".</string>
+    <string name="status_need_permission">This app needs permission to draw over other apps.</string>
+    <string name="status_no_pets">No sprite sheets found in assets/. Add petXX.png files.</string>
+    <string name="hint">Pets roam the screen in different directions and speeds. Drag a pet to move it; tap a pet to open this app. Uncheck pets and tap \"Show selected pets\" to remove them.</string>
+    <string name="set_wallpaper">Set as live wallpaper (lock screen)</string>
+    <string name="wallpaper_label">Animated Pets</string>
+    <string name="wallpaper_desc">Your selected pets roam across the home and lock screen.</string>
+    <string name="wallpaper_unsupported">Live wallpapers aren\'t supported on this device.</string>
+</resources>
