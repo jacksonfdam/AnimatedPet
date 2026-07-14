@@ -15,7 +15,10 @@ data class PetLayout(
     val backRow: Int? = null,
     /** Front-facing emote row (idle/wave/etc.) played occasionally; null if the sheet has none. */
     val emoteRow: Int? = null,
-    val sideFacesLeft: Boolean = true,
+    /** The side row's native facing. Every sheet in this project faces right. */
+    val sideFacesLeft: Boolean = false,
+    /** Whether the pet roams up/down. Off for sheets without clean front/back walks. */
+    val roamVertically: Boolean = true,
 )
 
 /** A pet available to spawn, backed by a sprite sheet in `assets/`. */
@@ -48,10 +51,10 @@ object PetCatalog {
 
     // Sheets whose row layout differs from the default.
     private val layouts = mapOf(
-        // Maria (4x4): row 0 side walk facing RIGHT, row 3 front emotes; no clean front/back walk.
-        "pet05" to PetLayout(sideRow = 0, emoteRow = 3, sideFacesLeft = false),
-        // Jackson (5x4): row 0 side walk facing RIGHT, row 1 back walk, row 4 front emotes.
-        "pet06" to PetLayout(sideRow = 0, backRow = 1, emoteRow = 4, sideFacesLeft = false),
+        // Maria (4x4): only row 0 is a clean walk (side); no front/back walk -> horizontal only.
+        "pet05" to PetLayout(sideRow = 0, emoteRow = 3, roamVertically = false),
+        // Jackson (5x4): rows mix side/front frames; only row 0 is a clean walk -> horizontal only.
+        "pet06" to PetLayout(sideRow = 0, emoteRow = 4, roamVertically = false),
     )
 
     fun available(context: Context): List<PetDef> {
