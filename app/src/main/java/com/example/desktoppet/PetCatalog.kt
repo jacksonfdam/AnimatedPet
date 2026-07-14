@@ -48,8 +48,8 @@ object PetCatalog {
 
     // Sheets whose row layout differs from the default.
     private val layouts = mapOf(
-        // Maria (4x4): row 0 side walk, row 3 front emotes; no clean front/back walk.
-        "pet05" to PetLayout(sideRow = 0, emoteRow = 3),
+        // Maria (4x4): row 0 side walk facing RIGHT, row 3 front emotes; no clean front/back walk.
+        "pet05" to PetLayout(sideRow = 0, emoteRow = 3, sideFacesLeft = false),
         // Jackson (5x4): row 0 side walk, row 1 back walk, row 4 front emotes.
         "pet06" to PetLayout(sideRow = 0, backRow = 1, emoteRow = 4),
     )
