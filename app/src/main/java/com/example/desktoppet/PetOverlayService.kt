@@ -23,8 +23,6 @@ import android.view.WindowManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
 import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.sin
 import kotlin.random.Random
 
 /**
@@ -116,9 +114,8 @@ class PetOverlayService : Service() {
             y = Random.nextInt(dpToPx(48f), (screenHeight() - dpToPx(180f)).coerceAtLeast(dpToPx(49f)))
         }
 
-        // Random direction + per-pet speed => diagonals, laterals, verticals, all timings.
         val speed = dpToPx(Random.nextDouble(0.9, 2.6).toFloat()).toFloat().coerceAtLeast(1.5f)
-        val angle = Random.nextDouble(0.0, 2.0 * Math.PI)
+        val (vx, vy) = PetBehavior.walkVelocity(speed)
         val instance = PetInstance(
             def = def,
             sheet = sheet,
@@ -126,10 +123,12 @@ class PetOverlayService : Service() {
             params = params,
             fx = params.x.toFloat(),
             fy = params.y.toFloat(),
-            vx = (cos(angle) * speed).toFloat(),
-            vy = (sin(angle) * speed).toFloat(),
+            speed = speed,
+            vx = vx,
+            vy = vy,
             frameMs = frameMs,
         )
+        instance.stateUntil = SystemClock.uptimeMillis() + PetBehavior.walkDurationMs()
 
         view.setOnTouchListener(makeTouchListener(instance))
         pets[def.id] = instance
@@ -166,6 +165,7 @@ class PetOverlayService : Service() {
     }
 
     private fun step() {
+        val now = SystemClock.uptimeMillis()
         val w = screenWidth()
         val h = screenHeight()
         for (instance in pets.values) {
@@ -173,22 +173,29 @@ class PetOverlayService : Service() {
             val view = instance.view
             if (view.width == 0 || view.height == 0) continue
 
-            val maxX = (w - view.width).coerceAtLeast(0)
-            val maxY = (h - view.height).coerceAtLeast(0)
+            if (instance.emoting) {
+                if (now >= instance.stateUntil) startWalk(instance, now)
+                continue // stand still while emoting
+            }
 
-            // Occasionally pick a new heading so movement stays lively.
-            if (--instance.ticksUntilTurn <= 0) {
-                val speed = instance.speed()
-                val angle = Random.nextDouble(0.0, 2.0 * Math.PI)
-                instance.vx = (cos(angle) * speed).toFloat()
-                instance.vy = (sin(angle) * speed).toFloat()
-                instance.ticksUntilTurn = Random.nextInt(120, 400)
+            // End of a walk segment: either play an emote or head off in a new direction.
+            if (now >= instance.stateUntil) {
+                if (instance.def.layout.emoteRow != null && PetBehavior.shouldEmote()) {
+                    startEmote(instance, now)
+                    continue
+                }
+                val (vx, vy) = PetBehavior.walkVelocity(instance.speed)
+                instance.vx = vx
+                instance.vy = vy
+                instance.stateUntil = now + PetBehavior.walkDurationMs()
             }
 
             instance.fx += instance.vx
             instance.fy += instance.vy
 
-            // Bounce off the edges.
+            // Turn around at the edges (reflecting velocity makes the facing follow).
+            val maxX = (w - view.width).coerceAtLeast(0)
+            val maxY = (h - view.height).coerceAtLeast(0)
             if (instance.fx <= 0f) { instance.fx = 0f; instance.vx = abs(instance.vx) }
             if (instance.fx >= maxX) { instance.fx = maxX.toFloat(); instance.vx = -abs(instance.vx) }
             if (instance.fy <= 0f) { instance.fy = 0f; instance.vy = abs(instance.vy) }
@@ -200,6 +207,27 @@ class PetOverlayService : Service() {
             instance.params.y = instance.fy.toInt()
             runCatching { windowManager.updateViewLayout(view, instance.params) }
         }
+    }
+
+    private fun startWalk(instance: PetInstance, now: Long) {
+        instance.emoting = false
+        val (vx, vy) = PetBehavior.walkVelocity(instance.speed)
+        instance.vx = vx
+        instance.vy = vy
+        instance.stateUntil = now + PetBehavior.walkDurationMs()
+        instance.currentRow = -1 // force the walk row to be reapplied
+    }
+
+    private fun startEmote(instance: PetInstance, now: Long) {
+        val emoteRow = instance.def.layout.emoteRow ?: return
+        val sheet = instance.sheet ?: return
+        instance.emoting = true
+        instance.vx = 0f
+        instance.vy = 0f
+        instance.stateUntil = now + PetBehavior.emoteDurationMs()
+        instance.currentRow = emoteRow
+        instance.view.flipX = false
+        instance.view.setAnimation(sheet.bitmap, sheet.row(emoteRow), instance.frameMs)
     }
 
     /** Switches the sprite to the row that matches the pet's direction of travel. */
@@ -333,14 +361,15 @@ class PetOverlayService : Service() {
         val params: WindowManager.LayoutParams,
         var fx: Float,
         var fy: Float,
+        val speed: Float,
         var vx: Float,
         var vy: Float,
         val frameMs: Long,
     ) {
         var interacting = false
+        var emoting = false
         var currentRow = -1
-        var ticksUntilTurn = Random.nextInt(120, 400)
-        fun speed(): Float = kotlin.math.hypot(vx.toDouble(), vy.toDouble()).toFloat().coerceAtLeast(1.5f)
+        var stateUntil = 0L
     }
 
     companion object {

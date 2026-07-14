@@ -15,9 +15,6 @@ import android.service.wallpaper.WallpaperService
 import android.util.TypedValue
 import android.view.SurfaceHolder
 import kotlin.math.abs
-import kotlin.math.cos
-import kotlin.math.hypot
-import kotlin.math.sin
 import kotlin.random.Random
 
 /**
@@ -122,7 +119,7 @@ class PetWallpaperService : WallpaperService() {
         private fun newPet(def: PetDef, sheet: SpriteSheet): Pet {
             val targetHeight = dpToPx(Random.nextInt(96, 140).toFloat()).toFloat()
             val speed = dpToPx(Random.nextDouble(0.9, 2.6).toFloat()).toFloat().coerceAtLeast(1.5f)
-            val angle = Random.nextDouble(0.0, 2.0 * Math.PI)
+            val (vx, vy) = PetBehavior.walkVelocity(speed)
             val frames = sheet.row(def.layout.sideRow)
             return Pet(
                 layout = def.layout,
@@ -132,50 +129,84 @@ class PetWallpaperService : WallpaperService() {
                 boxH = frames.maxOf { it.height() },
                 fx = Random.nextFloat() * (width * 0.8f),
                 fy = Random.nextFloat() * (height * 0.7f) + height * 0.1f,
-                vx = (cos(angle) * speed).toFloat(),
-                vy = (sin(angle) * speed).toFloat(),
+                speed = speed,
+                vx = vx,
+                vy = vy,
                 targetHeight = targetHeight,
                 frameMs = Random.nextLong(90L, 160L),
-            )
+            ).also { it.stateUntil = SystemClock.uptimeMillis() + PetBehavior.walkDurationMs() }
         }
 
         private fun update() {
             val now = SystemClock.uptimeMillis()
             for (pet in pets) {
-                if (--pet.ticksUntilTurn <= 0) {
-                    val speed = hypot(pet.vx.toDouble(), pet.vy.toDouble()).toFloat().coerceAtLeast(1.5f)
-                    val angle = Random.nextDouble(0.0, 2.0 * Math.PI)
-                    pet.vx = (cos(angle) * speed).toFloat()
-                    pet.vy = (sin(angle) * speed).toFloat()
-                    pet.ticksUntilTurn = Random.nextInt(120, 400)
+                if (pet.emoting) {
+                    if (now >= pet.stateUntil) startWalk(pet, now) else { advanceFrame(pet, now); continue }
+                } else {
+                    if (now >= pet.stateUntil) {
+                        if (pet.layout.emoteRow != null && PetBehavior.shouldEmote()) {
+                            startEmote(pet, now)
+                            advanceFrame(pet, now)
+                            continue
+                        }
+                        val (vx, vy) = PetBehavior.walkVelocity(pet.speed)
+                        pet.vx = vx
+                        pet.vy = vy
+                        pet.stateUntil = now + PetBehavior.walkDurationMs()
+                    }
+
+                    pet.fx += pet.vx
+                    pet.fy += pet.vy
+
+                    val scale = pet.targetHeight / pet.boxH
+                    val boxWpx = pet.boxW * scale
+                    val maxX = (width - boxWpx).coerceAtLeast(0f)
+                    val maxY = (height - pet.targetHeight).coerceAtLeast(0f)
+                    if (pet.fx <= 0f) { pet.fx = 0f; pet.vx = abs(pet.vx) }
+                    if (pet.fx >= maxX) { pet.fx = maxX; pet.vx = -abs(pet.vx) }
+                    if (pet.fy <= 0f) { pet.fy = 0f; pet.vy = abs(pet.vy) }
+                    if (pet.fy >= maxY) { pet.fy = maxY; pet.vy = -abs(pet.vy) }
+
+                    val (row, flip) = PetAnimations.rowAndFlip(pet.layout, pet.vx, pet.vy)
+                    pet.flip = flip
+                    setRow(pet, row)
                 }
 
-                pet.fx += pet.vx
-                pet.fy += pet.vy
+                advanceFrame(pet, now)
+            }
+        }
 
-                val scale = pet.targetHeight / pet.boxH
-                val boxWpx = pet.boxW * scale
-                val maxX = (width - boxWpx).coerceAtLeast(0f)
-                val maxY = (height - pet.targetHeight).coerceAtLeast(0f)
-                if (pet.fx <= 0f) { pet.fx = 0f; pet.vx = abs(pet.vx) }
-                if (pet.fx >= maxX) { pet.fx = maxX; pet.vx = -abs(pet.vx) }
-                if (pet.fy <= 0f) { pet.fy = 0f; pet.vy = abs(pet.vy) }
-                if (pet.fy >= maxY) { pet.fy = maxY; pet.vy = -abs(pet.vy) }
+        private fun startWalk(pet: Pet, now: Long) {
+            pet.emoting = false
+            val (vx, vy) = PetBehavior.walkVelocity(pet.speed)
+            pet.vx = vx
+            pet.vy = vy
+            pet.stateUntil = now + PetBehavior.walkDurationMs()
+        }
 
-                val (row, flip) = PetAnimations.rowAndFlip(pet.layout, pet.vx, pet.vy)
-                pet.flip = flip
-                if (row != pet.currentRow) {
-                    pet.currentRow = row
-                    pet.frames = pet.sheet.row(row)
-                    pet.boxW = pet.frames.maxOf { it.width() }
-                    pet.boxH = pet.frames.maxOf { it.height() }
-                    pet.frameIndex = 0
-                }
+        private fun startEmote(pet: Pet, now: Long) {
+            val emoteRow = pet.layout.emoteRow ?: return
+            pet.emoting = true
+            pet.vx = 0f
+            pet.vy = 0f
+            pet.flip = false
+            pet.stateUntil = now + PetBehavior.emoteDurationMs()
+            setRow(pet, emoteRow)
+        }
 
-                if (now - pet.lastFrameAt >= pet.frameMs) {
-                    pet.frameIndex = (pet.frameIndex + 1) % pet.frames.size
-                    pet.lastFrameAt = now
-                }
+        private fun setRow(pet: Pet, row: Int) {
+            if (row == pet.currentRow) return
+            pet.currentRow = row
+            pet.frames = pet.sheet.row(row)
+            pet.boxW = pet.frames.maxOf { it.width() }
+            pet.boxH = pet.frames.maxOf { it.height() }
+            pet.frameIndex = 0
+        }
+
+        private fun advanceFrame(pet: Pet, now: Long) {
+            if (now - pet.lastFrameAt >= pet.frameMs) {
+                pet.frameIndex = (pet.frameIndex + 1) % pet.frames.size.coerceAtLeast(1)
+                pet.lastFrameAt = now
             }
         }
 
@@ -223,6 +254,7 @@ class PetWallpaperService : WallpaperService() {
         var boxH: Int,
         var fx: Float,
         var fy: Float,
+        val speed: Float,
         var vx: Float,
         var vy: Float,
         val targetHeight: Float,
@@ -232,7 +264,8 @@ class PetWallpaperService : WallpaperService() {
         var flip = false
         var frameIndex = 0
         var lastFrameAt = 0L
-        var ticksUntilTurn = Random.nextInt(120, 400)
+        var emoting = false
+        var stateUntil = 0L
     }
 
     companion object {
