@@ -97,7 +97,7 @@ class PetOverlayService : Service() {
             targetHeightDp = heightDp
             setAnimation(
                 sheet?.bitmap,
-                sheet?.row(PetAnimations.ROW_SIDE) ?: emptyList(),
+                sheet?.row(def.layout.sideRow) ?: emptyList(),
                 frameMs,
             )
         }
@@ -204,7 +204,7 @@ class PetOverlayService : Service() {
 
     /** Switches the sprite to the row that matches the pet's direction of travel. */
     private fun applyFacing(instance: PetInstance) {
-        val (row, flip) = PetAnimations.rowForVelocity(instance.vx, instance.vy)
+        val (row, flip) = PetAnimations.rowAndFlip(instance.def.layout, instance.vx, instance.vy)
         instance.view.flipX = flip
         if (row != instance.currentRow) {
             instance.currentRow = row

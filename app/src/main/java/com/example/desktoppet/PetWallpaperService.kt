@@ -23,7 +23,7 @@ import kotlin.random.Random
 /**
  * Live wallpaper that renders the selected pets roaming the screen, so they show on
  * both the home screen and the lock screen. It reuses [SpriteSheet] for frame
- * detection and [PetAnimations.rowForVelocity] for facing — the same engine as the
+ * detection and [PetAnimations.rowAndFlip] for facing — the same engine as the
  * overlay, drawn straight onto the wallpaper [Canvas].
  *
  * The set of pets mirrors the app's selection ([PetPrefs]); toggling pets in the app
@@ -115,16 +115,17 @@ class PetWallpaperService : WallpaperService() {
                     SpriteSheet.load(this@PetWallpaperService, def.assetName)
                 } ?: continue
                 if (sheet.rows.isEmpty()) continue
-                pets.add(newPet(sheet))
+                pets.add(newPet(def, sheet))
             }
         }
 
-        private fun newPet(sheet: SpriteSheet): Pet {
+        private fun newPet(def: PetDef, sheet: SpriteSheet): Pet {
             val targetHeight = dpToPx(Random.nextInt(96, 140).toFloat()).toFloat()
             val speed = dpToPx(Random.nextDouble(0.9, 2.6).toFloat()).toFloat().coerceAtLeast(1.5f)
             val angle = Random.nextDouble(0.0, 2.0 * Math.PI)
-            val frames = sheet.row(PetAnimations.ROW_SIDE)
+            val frames = sheet.row(def.layout.sideRow)
             return Pet(
+                layout = def.layout,
                 sheet = sheet,
                 frames = frames,
                 boxW = frames.maxOf { it.width() },
@@ -161,7 +162,7 @@ class PetWallpaperService : WallpaperService() {
                 if (pet.fy <= 0f) { pet.fy = 0f; pet.vy = abs(pet.vy) }
                 if (pet.fy >= maxY) { pet.fy = maxY; pet.vy = -abs(pet.vy) }
 
-                val (row, flip) = PetAnimations.rowForVelocity(pet.vx, pet.vy)
+                val (row, flip) = PetAnimations.rowAndFlip(pet.layout, pet.vx, pet.vy)
                 pet.flip = flip
                 if (row != pet.currentRow) {
                     pet.currentRow = row
@@ -215,6 +216,7 @@ class PetWallpaperService : WallpaperService() {
 
     /** Per-pet runtime state for the wallpaper. */
     private class Pet(
+        val layout: PetLayout,
         val sheet: SpriteSheet,
         var frames: List<Rect>,
         var boxW: Int,
@@ -226,7 +228,7 @@ class PetWallpaperService : WallpaperService() {
         val targetHeight: Float,
         val frameMs: Long,
     ) {
-        var currentRow = PetAnimations.ROW_SIDE
+        var currentRow = -1
         var flip = false
         var frameIndex = 0
         var lastFrameAt = 0L

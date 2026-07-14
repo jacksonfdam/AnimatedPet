@@ -173,15 +173,20 @@ object PetAnimations {
     const val WALK_FRAME_MS = 120L
 
     /**
-     * Picks the row that matches a pet's direction of travel and whether the sprite
-     * must be mirrored. The side row faces LEFT, so travelling right returns flip=true.
+     * Picks the row + horizontal mirror for a pet's direction of travel, honouring the
+     * pet's [PetLayout]. Horizontal movement uses the side row (mirrored to face the
+     * travel direction). Vertical movement uses the front/back row when the sheet has
+     * one, otherwise falls back to the side row facing the horizontal component.
      */
-    fun rowForVelocity(vx: Float, vy: Float): Pair<Int, Boolean> =
+    fun rowAndFlip(layout: PetLayout, vx: Float, vy: Float): Pair<Int, Boolean> {
+        val sideFlip = if (layout.sideFacesLeft) vx > 0f else vx < 0f
         if (kotlin.math.abs(vx) >= kotlin.math.abs(vy)) {
-            ROW_SIDE to (vx > 0f)
-        } else if (vy > 0f) {
-            ROW_FRONT to false
-        } else {
-            ROW_BACK to false
+            return layout.sideRow to sideFlip
         }
+        return if (vy > 0f) {
+            layout.frontRow?.let { it to false } ?: (layout.sideRow to sideFlip)
+        } else {
+            layout.backRow?.let { it to false } ?: (layout.sideRow to sideFlip)
+        }
+    }
 }
