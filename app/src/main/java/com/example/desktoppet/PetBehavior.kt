@@ -13,13 +13,22 @@ import kotlin.random.Random
  */
 object PetBehavior {
 
-    /** A fresh walk velocity at [speed] px/frame: 55% horizontal, 25% vertical, 20% diagonal. */
-    fun walkVelocity(speed: Float): Pair<Float, Float> = when (Random.nextInt(100)) {
-        in 0..54 -> (if (Random.nextBoolean()) speed else -speed) to 0f
-        in 55..79 -> 0f to (if (Random.nextBoolean()) speed else -speed)
-        else -> {
-            val d = speed * DIAGONAL_FACTOR
-            (if (Random.nextBoolean()) d else -d) to (if (Random.nextBoolean()) d else -d)
+    /**
+     * A fresh walk velocity at [speed] px/frame. When [allowVertical] is true: 55%
+     * horizontal, 25% vertical, 20% diagonal. When false (sheets without front/back
+     * walks) movement is purely horizontal, so the pet never slides sideways up/down.
+     */
+    fun walkVelocity(speed: Float, allowVertical: Boolean = true): Pair<Float, Float> {
+        if (!allowVertical) {
+            return (if (Random.nextBoolean()) speed else -speed) to 0f
+        }
+        return when (Random.nextInt(100)) {
+            in 0..54 -> (if (Random.nextBoolean()) speed else -speed) to 0f
+            in 55..79 -> 0f to (if (Random.nextBoolean()) speed else -speed)
+            else -> {
+                val d = speed * DIAGONAL_FACTOR
+                (if (Random.nextBoolean()) d else -d) to (if (Random.nextBoolean()) d else -d)
+            }
         }
     }
 

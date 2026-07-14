@@ -119,7 +119,7 @@ class PetWallpaperService : WallpaperService() {
         private fun newPet(def: PetDef, sheet: SpriteSheet): Pet {
             val targetHeight = dpToPx(Random.nextInt(96, 140).toFloat()).toFloat()
             val speed = dpToPx(Random.nextDouble(0.9, 2.6).toFloat()).toFloat().coerceAtLeast(1.5f)
-            val (vx, vy) = PetBehavior.walkVelocity(speed)
+            val (vx, vy) = PetBehavior.walkVelocity(speed, def.layout.roamVertically)
             val frames = sheet.row(def.layout.sideRow)
             return Pet(
                 layout = def.layout,
@@ -149,7 +149,7 @@ class PetWallpaperService : WallpaperService() {
                             advanceFrame(pet, now)
                             continue
                         }
-                        val (vx, vy) = PetBehavior.walkVelocity(pet.speed)
+                        val (vx, vy) = PetBehavior.walkVelocity(pet.speed, pet.layout.roamVertically)
                         pet.vx = vx
                         pet.vy = vy
                         pet.stateUntil = now + PetBehavior.walkDurationMs()
@@ -178,7 +178,7 @@ class PetWallpaperService : WallpaperService() {
 
         private fun startWalk(pet: Pet, now: Long) {
             pet.emoting = false
-            val (vx, vy) = PetBehavior.walkVelocity(pet.speed)
+            val (vx, vy) = PetBehavior.walkVelocity(pet.speed, pet.layout.roamVertically)
             pet.vx = vx
             pet.vy = vy
             pet.stateUntil = now + PetBehavior.walkDurationMs()

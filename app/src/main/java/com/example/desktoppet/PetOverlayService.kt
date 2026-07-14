@@ -115,7 +115,7 @@ class PetOverlayService : Service() {
         }
 
         val speed = dpToPx(Random.nextDouble(0.9, 2.6).toFloat()).toFloat().coerceAtLeast(1.5f)
-        val (vx, vy) = PetBehavior.walkVelocity(speed)
+        val (vx, vy) = PetBehavior.walkVelocity(speed, def.layout.roamVertically)
         val instance = PetInstance(
             def = def,
             sheet = sheet,
@@ -184,7 +184,7 @@ class PetOverlayService : Service() {
                     startEmote(instance, now)
                     continue
                 }
-                val (vx, vy) = PetBehavior.walkVelocity(instance.speed)
+                val (vx, vy) = PetBehavior.walkVelocity(instance.speed, instance.def.layout.roamVertically)
                 instance.vx = vx
                 instance.vy = vy
                 instance.stateUntil = now + PetBehavior.walkDurationMs()
@@ -211,7 +211,7 @@ class PetOverlayService : Service() {
 
     private fun startWalk(instance: PetInstance, now: Long) {
         instance.emoting = false
-        val (vx, vy) = PetBehavior.walkVelocity(instance.speed)
+        val (vx, vy) = PetBehavior.walkVelocity(instance.speed, instance.def.layout.roamVertically)
         instance.vx = vx
         instance.vy = vy
         instance.stateUntil = now + PetBehavior.walkDurationMs()
