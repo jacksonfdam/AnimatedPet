@@ -96,7 +96,9 @@ class MainActivity : AppCompatActivity() {
 
     /** Opens the system live-wallpaper preview for our wallpaper (or the chooser as fallback). */
     private fun openLiveWallpaperPicker() {
-        PetPrefs.setSelected(this, selectedIds().toSet()) // ensure the wallpaper shows current picks
+        // Snapshot the current picks into the wallpaper's OWN selection so choosing pets
+        // for the overlay never changes the wallpaper — only setting it does.
+        PetPrefs.setWallpaperPets(this, selectedIds().toSet())
         val component = ComponentName(this, PetWallpaperService::class.java)
         val direct = Intent(WallpaperManager.ACTION_CHANGE_LIVE_WALLPAPER).apply {
             putExtra(WallpaperManager.EXTRA_LIVE_WALLPAPER_COMPONENT, component)

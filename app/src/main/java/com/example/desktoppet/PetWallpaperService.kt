@@ -53,7 +53,7 @@ class PetWallpaperService : WallpaperService() {
 
         private val prefListener =
             SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                if (key == PetPrefs.KEY_SELECTED) reloadPets()
+                if (key == PetPrefs.KEY_WALLPAPER) reloadPets()
             }
 
         private val frameRunnable = Runnable { frame() }
@@ -109,7 +109,7 @@ class PetWallpaperService : WallpaperService() {
         private fun reloadPets() {
             pets.clear()
             if (width == 0 || height == 0) return
-            for (id in PetPrefs.selected(this@PetWallpaperService)) {
+            for (id in PetPrefs.wallpaperPets(this@PetWallpaperService)) {
                 val def = PetCatalog.byId(this@PetWallpaperService, id) ?: continue
                 val sheet = sheetCache.getOrPut(def.assetName) {
                     SpriteSheet.load(this@PetWallpaperService, def.assetName)
