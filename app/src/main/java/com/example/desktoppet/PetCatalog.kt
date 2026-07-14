@@ -13,6 +13,8 @@ data class PetLayout(
     val sideRow: Int,
     val frontRow: Int? = null,
     val backRow: Int? = null,
+    /** Front-facing emote row (idle/wave/etc.) played occasionally; null if the sheet has none. */
+    val emoteRow: Int? = null,
     val sideFacesLeft: Boolean = true,
 )
 
@@ -46,10 +48,10 @@ object PetCatalog {
 
     // Sheets whose row layout differs from the default.
     private val layouts = mapOf(
-        // Maria (4x4): only row 0 is a clean side walk; other rows are mixed/emotes.
-        "pet05" to PetLayout(sideRow = 0),
-        // Jackson (5x4): row 0 side walk, row 1 back walk; no clean front walk row.
-        "pet06" to PetLayout(sideRow = 0, backRow = 1),
+        // Maria (4x4): row 0 side walk, row 3 front emotes; no clean front/back walk.
+        "pet05" to PetLayout(sideRow = 0, emoteRow = 3),
+        // Jackson (5x4): row 0 side walk, row 1 back walk, row 4 front emotes.
+        "pet06" to PetLayout(sideRow = 0, backRow = 1, emoteRow = 4),
     )
 
     fun available(context: Context): List<PetDef> {
