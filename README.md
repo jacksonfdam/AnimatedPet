@@ -11,7 +11,7 @@ other apps. **Tap** the pet to open the app; **drag** it to move it around.
 | Sprite rendering | `SpriteView.kt` | Custom `View` that draws one frame at a time (nearest-neighbour, so pixel art stays crisp) and loops through a frame list. |
 | Sheet slicing | `SpriteSheet.kt` | Loads `assets/pet_sheet.png` and slices it into a uniform `cols x rows` grid. `PetAnimations` maps rows to named animations. |
 | Multi-pet overlay | `PetOverlayService.kt` | Any number of pets roam the screen in their own direction/speed, face their travel direction, bounce off edges, drag to move, tap to open the app. |
-| Live wallpaper | `PetWallpaperService.kt` | Same pets drawn onto the wallpaper canvas, so they appear on the **home and lock screen**. Reads the same selection via `PetPrefs` and updates live. |
+| Live wallpaper | `PetWallpaperService.kt` | Same pets drawn onto the wallpaper canvas, so they appear on the **home and lock screen**. Uses its own pet selection (`PetPrefs.KEY_WALLPAPER`), written only when you tap "Set as live wallpaper" — kept independent from the overlay so picking overlay pets never changes an active wallpaper. |
 | Pet catalog | `PetCatalog.kt` | Auto-discovers every `*.png` in `assets/` as a selectable pet. |
 | Control panel | `MainActivity.kt` | Overlay permission, multi-select pets, start/remove, and "Set as live wallpaper". |
 
